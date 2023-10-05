@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from functools import partial
+import jax
 import jax.numpy as jnp
 import jax.random
 
@@ -39,6 +41,7 @@ class Particles(Hamiltonian):
         self.mass_mat = jnp.diag(1/jnp.repeat(self.masses, self.d_space))
 
 
+    @partial(jax.jit, static_argnames=['self', 'wavefunction'])
     def calc_H_loc(self, wavefunction, xs):
         """
         Calculates H_loc on a batch of shape = (batch_dim, N * d_space)
