@@ -9,23 +9,38 @@ class Wavefunction(ABC):
     General Wrapper for continuous space wave function.
     """
 
-    @abstractmethod
-    def calc_logpsi(self, x):
+    def __init__(self, input_shape):
         """
-        Evauluates the logarithmn of the wavefunction at batches of data
+        Initialises the class.
+        """
+        self.input_shape = input_shape
+        self.grad_logpsi = jax.vmap(jax.grad(self.calc_logpsi, argnums = 0), in_axes = (None, 0))
+
+
+    @abstractmethod
+    def calc_logpsi(self, parameters, x):
+        """
+        Evaluates the logarithmn of the wavefunction on (possibly batches of) basis vectors.
         """
         pass
 
-    @partial(jax.jit, static_argnames=['self'])
-    def calc_psi(self, x):
+    def calc_psi(self, parameters, x):
         """
-        Evaluates the wavefunction at batches of data
+        Evaluates the wavefunction on batches of basis vectors.
         """
-        return jnp.exp(self.calc_logpsi(x))
+        return jnp.exp(self.calc_logpsi(parameters, x))
     
-    @partial(jax.jit, static_argnames=['self'])
-    def calc_logprob(self, x):
+    def calc_logprob(self, parameters, x):
         """
-        Evaluates the log probability of state x
+        Evaluates the log probability of state x.
         """
-        return 2 * jnp.real(self.calc_logpsi(x))
+        return 2 * jnp.real(self.calc_logpsi(parameters, x))
+    
+    def propose_initials(self, key, parameters, N_chains):
+        """
+        Proposes N_chains starting values to start Markov chains for sampling.
+        """
+        return jax.random.uniform(key, (N_chains,) + self.shape)
+
+
+      

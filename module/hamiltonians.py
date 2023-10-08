@@ -12,9 +12,11 @@ class Hamiltonian(ABC):
     @abstractmethod
     def calc_H_loc(self, wavefunction, xs):
         """
-        Evaluates the local Hamiltonian for a given wavefuntion at positions xs.
+        Evaluates the local Hamiltonian for a given wavefuntion on basis vectors xs.
         """
         pass
+
+
 
 class Particles(Hamiltonian):
     """
@@ -41,16 +43,15 @@ class Particles(Hamiltonian):
         self.mass_mat = jnp.diag(1/jnp.repeat(self.masses, self.d_space))
 
 
-    @partial(jax.jit, static_argnames=['self', 'wavefunction'])
-    def calc_H_loc(self, wavefunction, xs):
+    def calc_H_loc(self, wavefunction, parameters, xs):
         """
         Calculates H_loc on a batch of shape = (batch_dim, N * d_space)
         """
 
-        mass_laplace = lambda x: jnp.trace(self.mass_mat @ jax.hessian(wavefunction.calc_psi)(x))
-        self.batch_mass_laplace = jax.vmap(mass_laplace, in_axes = (0))
+        mass_laplace = lambda x: jnp.trace(self.mass_mat @ jax.hessian(wavefunction.calc_psi, argnums = 1)(parameters, x))
+        self.batch_mass_laplace = jax.vmap(mass_laplace, in_axes = 0)
 
-        T = -self.hbar**2*self.batch_mass_laplace(xs)/2
+        T = -self.hbar**2*self.batch_mass_laplace(xs)/2 / wavefunction.calc_psi(parameters, xs)
         V = self.potential(xs)
 
         return T + V

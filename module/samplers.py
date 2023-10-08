@@ -9,21 +9,19 @@ class MCMC:
     """
     This class wraps the the Metropolis Hasting Sampler.
     """
-    def __init__(self, logprob, shape, variance):
-        self.logprob = logprob
-        self.shape = shape
+    def __init__(self, wavefunction, variance):
+        self.wavefunction = wavefunction
+        self.shape = wavefunction.input_shape
         self.variance = variance
 
-    @partial(jax.jit, static_argnames=['self'])
     def propose(self, key, element):
         """
         Proposes a new sample.
         """
         key, subkey = jax.random.split(key)
-        return subkey, element + jax.random.normal(subkey, shape = self.shape) * jnp.sqrt(self.variance)
+        return subkey, element + jax.random.normal(key, shape = self.shape) * jnp.sqrt(self.variance)
 
-    @partial(jax.jit, static_argnames=['self'])
-    def next_element(self, key, element):
+    def next_element(self, key, element, parameters):
         """
         Performs a Metropolis step. Returns new element and boolean value if proposed sample was accepted.
         """
@@ -31,29 +29,32 @@ class MCMC:
 
         subsubkey, proposal = self.propose(key, element)
 
-        ratio = jnp.exp(self.logprob(proposal) - self.logprob(element))
+        ratio = jnp.exp(self.wavefunction.calc_logprob(parameters, proposal) - self.wavefunction.calc_logprob(parameters, element))
 
-        return jnp.where(jax.random.uniform(subsubkey) < ratio, proposal,  jnp.copy(element))
+        return jnp.where(jax.random.uniform(subkey) < ratio, proposal,  jnp.copy(element)), jnp.where(jax.random.uniform(subkey) < ratio, 1, 0)
     
+
     @partial(jax.jit, static_argnames=['self', 'N_samples'])
-    def sample(self, rkey, initial, N_samples):
+    def sample(self, rkey, parameters, initial, N_samples):
         """
         Samples a markov chain of length N_samples
         """
         
         def f(data, bob):
-            next_item = self.next_element(data[0], data[1])
+            next_item, accept = self.next_element(data[0], data[1], data[3])
             key, _ = jax.random.split(data[0])
-            return ((key, next_item), next_item)
+            return ((key, next_item, data[2] + accept, data[3]), next_item)
         
-        return jax.lax.scan(f, (rkey, initial), jnp.zeros((N_samples,) + self.shape))[1]
+        carry, samples = jax.lax.scan(f, (rkey, initial, 0, parameters), jnp.zeros((N_samples,) + self.shape))
+
+        return samples, carry[2]/N_samples
     
     @partial(jax.jit, static_argnames=['self', 'N_samples', 'N_chains'])
-    def sample_chains(self, key, N_chains, N_samples, span = 1):
-        vmapped = jax.vmap(lambda key, initial: self.sample(key, initial, N_samples), in_axes=0)
+    def sample_chains(self, key, parameters, N_chains, N_samples):
+        vmapped = jax.vmap(lambda key, initial: self.sample(key, parameters, initial, N_samples), in_axes=0)
 
         keys = jax.random.split(key, N_chains)
-        initials = jax.random.uniform(key, (N_chains,) + self.shape) * 2 * span - span
+        initials = self.wavefunction.propse_initials(key, parameters, N_chains)
 
         return vmapped(keys, initials)
 
