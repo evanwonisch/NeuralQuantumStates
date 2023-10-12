@@ -29,7 +29,7 @@ class MCMC:
 
         subsubkey, proposal = self.propose(key, element)
 
-        ratio = jnp.exp(self.wavefunction.calc_logprob(parameters, proposal) - self.wavefunction.calc_logprob(parameters, element))
+        ratio = jnp.exp(self.wavefunction.calc_logprob_single(parameters, proposal) - self.wavefunction.calc_logprob_single(parameters, element))
 
         return jnp.where(jax.random.uniform(subkey) < ratio, proposal,  jnp.copy(element)), jnp.where(jax.random.uniform(subkey) < ratio, 1, 0)
     

@@ -48,10 +48,10 @@ class Particles(Hamiltonian):
         Calculates H_loc on a batch of shape = (batch_dim, N * d_space)
         """
 
-        mass_laplace = lambda x: jnp.trace(self.mass_mat @ jax.hessian(wavefunction.calc_psi, argnums = 1)(parameters, x))
+        mass_laplace = lambda x: jnp.trace(self.mass_mat * jax.hessian(wavefunction.calc_psi_single, argnums = 1)(parameters, x))
         self.batch_mass_laplace = jax.vmap(mass_laplace, in_axes = 0)
 
-        T = -self.hbar**2*self.batch_mass_laplace(xs)/2 / wavefunction.calc_psi(parameters, xs)
+        T = -self.hbar**2*self.batch_mass_laplace(xs) / 2 / wavefunction.calc_psi(parameters, xs)
         V = self.potential(xs)
 
         return T + V
