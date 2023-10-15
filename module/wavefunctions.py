@@ -24,6 +24,7 @@ class Wavefunction(ABC):
         """
         pass
 
+    @abstractmethod
     def calc_logpsi_single(self, parameters, x):
         """
         Calculates logpsi on one sample.

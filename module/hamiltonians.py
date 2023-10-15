@@ -42,16 +42,23 @@ class Particles(Hamiltonian):
 
         self.mass_mat = jnp.diag(1/jnp.repeat(self.masses, self.d_space))
 
+        self.batch_mass_laplace = jax.vmap(self.mass_laplace, in_axes = [None, None, 0])
+
+    def calc_Hessian(self, wavefunction, parameters, x):
+        return jax.hessian(wavefunction.calc_psi_single, argnums = 1)(parameters, x)
+    
+    def mass_laplace(self, wavefunction, parameters, x):
+        return jnp.sum(self.mass_mat * self.calc_Hessian(wavefunction, parameters, x))
 
     def calc_H_loc(self, wavefunction, parameters, xs):
         """
         Calculates H_loc on a batch of shape = (batch_dim, N * d_space)
         """
 
-        mass_laplace = lambda x: jnp.trace(self.mass_mat * jax.hessian(wavefunction.calc_psi_single, argnums = 1)(parameters, x))
-        self.batch_mass_laplace = jax.vmap(mass_laplace, in_axes = 0)
+        # mass_laplace = lambda x: jnp.sum(self.mass_mat * jax.hessian(wavefunction.calc_psi_single, argnums = 1)(parameters, x))
+        # self.batch_mass_laplace = jax.vmap(mass_laplace, in_axes = 0)
 
-        T = -self.hbar**2*self.batch_mass_laplace(xs) / 2 / wavefunction.calc_psi(parameters, xs)
+        T = -self.hbar**2*self.batch_mass_laplace(wavefunction, parameters, xs) / 2 / wavefunction.calc_psi(parameters, xs)
         V = self.potential(xs)
 
         return T + V
