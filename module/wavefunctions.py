@@ -23,8 +23,7 @@ class Wavefunction(ABC):
         Evaluates the logarithmn of the wavefunction on batches of basis vectors.
         """
         pass
-
-    @abstractmethod
+    
     def calc_logpsi_single(self, parameters, x):
         """
         Calculates logpsi on one sample.
