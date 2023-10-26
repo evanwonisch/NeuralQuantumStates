@@ -64,4 +64,49 @@ class Wavefunction(ABC):
         return jax.random.uniform(key, (N_chains,) + self.shape)
 
 
-      
+    
+
+######################################################
+#               Example Wavefunctions                #
+######################################################
+
+class Orbital(Wavefunction):
+    def __init__(self, k, R, d_space = 3):
+        """
+        Initialises a single orbital placed at position R with decay coefficient k. The single parameter A scales the wavefunction.
+        """
+        super().__init__(input_shape = (d_space,))
+
+        self.R = R
+        self.k = k
+    
+    def calc_logpsi(self, A , x):
+        r = jnp.sqrt(jnp.sum((x - self.R)**2, axis = -1))
+        return -self.k * r + A
+    
+
+class LCAO(Wavefunction):
+    def __init__(self, R, k, d_space = 3):
+        """
+        Creates a LCAO orbital for nuclei positions R with potential energy coefficients k.
+
+        Inputs:
+        R       : nuclei positions. shape R = (N_nuclei, d)
+        k       : potential energy coefficients shape k = (N_nuclei)
+        """
+        super().__init__(input_shape = (d_space,))
+
+        self.R = R
+        self.k = k
+
+    def calc_logpsi(self, parameters, x):
+        """
+        Evaluates the logarithm of psi at positions shape x = (N_samples, d). The parameters incorporate the scaling
+        coefficients for the linear combination of orbitals, and thus have shape = (N_nuclei,).
+        """
+        x = jnp.expand_dims(x, axis = 1)
+        R = jnp.expand_dims(self.R, axis = 0)
+
+        d = jnp.sqrt(jnp.sum((x - R)**2, axis = -1))
+
+        return jax.scipy.special.logsumexp(-self.k * d, b = parameters, axis = -1)
