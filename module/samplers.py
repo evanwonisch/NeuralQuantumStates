@@ -14,12 +14,17 @@ class MCMC:
         self.shape = wavefunction.input_shape
         self.variance = variance
 
-    def propose(self, key, element):
+        # proposer
+        self.propose_internal = self.propose_simple
+
+    def propose_simple(self, key, element):
         """
         Proposes a new sample.
         """
         key, subkey = jax.random.split(key)
+
         return subkey, element + jax.random.normal(key, shape = self.shape) * jnp.sqrt(self.variance)
+    
 
     def next_element(self, key, element, parameters):
         """
@@ -27,7 +32,7 @@ class MCMC:
         """
         key, subkey = jax.random.split(key)
 
-        subsubkey, proposal = self.propose(key, element)
+        subsubkey, proposal = self.propose_internal(key, element)
 
         ratio = jnp.exp(self.wavefunction.calc_logprob_single(parameters, proposal) - self.wavefunction.calc_logprob_single(parameters, element))
 
@@ -71,3 +76,5 @@ class MCMC:
         v = 0.5*(jnp.expand_dims(vars, axis = 1) + jnp.expand_dims(vars, axis = 0))
 
         return d/v
+    
+
