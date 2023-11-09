@@ -18,3 +18,10 @@ $$
 $$
 
 satsfies the the cusp condition much better but fails to provide correct asymptotic behavior. A tradeoff between short-range and long-range accuracy must be taken. As the MC-sampler rarely samples low-likelihood points, focussing on the correct cusp condition is more reasonable.
+
+
+## TODO
+
+- very long run N = 10000
+- chapter 6.4 stochastic reconfig
+- try R optimisation (set different initial R)
