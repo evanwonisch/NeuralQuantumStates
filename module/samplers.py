@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.random
 
 
-class MCMC:
+class MCMC(ABC):
     """
     This class wraps the the Metropolis Hasting Sampler.
     """
@@ -14,17 +14,12 @@ class MCMC:
         self.shape = wavefunction.input_shape
         self.variance = variance
 
-        # proposer
-        self.propose_internal = self.propose_simple
-
-    def propose_simple(self, key, element):
+    @abstractmethod
+    def propose(self, key, element):
         """
-        Proposes a new sample.
+        Proposes a new Sample.
         """
-        key, subkey = jax.random.split(key)
-
-        return subkey, element + jax.random.normal(key, shape = self.shape) * jnp.sqrt(self.variance)
-    
+        pass
 
     def next_element(self, key, element, parameters):
         """
@@ -32,7 +27,7 @@ class MCMC:
         """
         key, subkey = jax.random.split(key)
 
-        subsubkey, proposal = self.propose_internal(key, element)
+        subsubkey, proposal = self.propose(key, element)
 
         ratio = jnp.exp(self.wavefunction.calc_logprob_single(parameters, proposal) - self.wavefunction.calc_logprob_single(parameters, element))
 
@@ -78,3 +73,12 @@ class MCMC:
         return d/v
     
 
+class MCMCsimple(MCMC):
+     
+     def propose(self, key, element):
+        """
+        Proposes a new sample by adding random noise to it.
+        """
+        key, subkey = jax.random.split(key)
+
+        return subkey, element + jax.random.normal(key, shape = self.shape) * jnp.sqrt(self.variance)

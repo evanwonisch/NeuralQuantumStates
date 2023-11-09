@@ -25,3 +25,4 @@ satsfies the the cusp condition much better but fails to provide correct asympto
 - very long run N = 10000
 - chapter 6.4 stochastic reconfig
 - try R optimisation (set different initial R)
+- try two elongated hydrogen nuclei
