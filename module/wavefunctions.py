@@ -86,18 +86,20 @@ class Orbital(Wavefunction):
     
 
 class LCAO(Wavefunction):
-    def __init__(self, R, k, d_space = 3):
+    def __init__(self, d_space = 3):
         """
-        Creates a LCAO orbital for nuclei positions R with potential energy coefficients k.
-
-        Inputs:
-        R       : nuclei positions. shape R = (N_nuclei, d)
-        k       : potential energy coefficients shape k = (N_nuclei)
+        Creates a LCAO orbital in dimensions d.
         """
         super().__init__(input_shape = (d_space,))
 
-        self.R = R
-        self.k = k
+
+    def init_parameters(self, R, k, lamb):
+        """
+        Creates the parameter pytree which incorporates shape R = (N_nuclei, d) positions of nuclei,
+        shape k = (N_nuclei) potential energy coefficients and shape l = (N_nuclei) linear combination coefficients.
+        """
+        return {"R": R, "k": k, "lamb": lamb}
+
 
     def calc_logpsi(self, parameters, x):
         """
@@ -105,8 +107,8 @@ class LCAO(Wavefunction):
         coefficients for the linear combination of orbitals, and thus have shape = (N_nuclei,).
         """
         x = jnp.expand_dims(x, axis = 1)
-        R = jnp.expand_dims(self.R, axis = 0)
+        R = jnp.expand_dims(parameters["R"], axis = 0)
 
         d = jnp.sqrt(jnp.sum((x - R)**2, axis = -1))
 
-        return jax.scipy.special.logsumexp(-self.k * d, b = parameters, axis = -1)
+        return jax.scipy.special.logsumexp(-parameters["k"] * d, b = parameters["lamb"], axis = -1)
