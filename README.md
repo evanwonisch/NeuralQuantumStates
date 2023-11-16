@@ -21,8 +21,15 @@ satsfies the the cusp condition much better but fails to provide correct asympto
 
 
 ## TODO
-
 - very long run N = 10000
 - chapter 6.4 stochastic reconfig
 - try R optimisation (set different initial R)
 - try two elongated hydrogen nuclei
+
+## TODO
+- adiabatic (two learning rates)
+- Hellmann-Feynman vs chain rule
+- pertubation theory on Hellmann-Feynmann theorem
+- use natural gradient (stochastic reconfiguration implementation) (rexamine old problems)
+- read papers:  - neural backflow
+                - many electron SE

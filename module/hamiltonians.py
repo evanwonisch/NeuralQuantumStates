@@ -65,5 +65,5 @@ class Particles(Hamiltonian):
         return T
 
     def calc_V_loc(self, wavefunction, parameters, xs):
-        V = self.potential(xs)  
+        V = self.potential(xs, parameters)  
         return V
