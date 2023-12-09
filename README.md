@@ -33,3 +33,10 @@ satsfies the the cusp condition much better but fails to provide correct asympto
 - use natural gradient (stochastic reconfiguration implementation) (rexamine old problems)
 - read papers:  - neural backflow
                 - many electron SE
+
+
+## TODO
+- understand stochastic reconfig on riemannian manifolds
+- understand forward and backward mode differentiation
+- improve gradient calculation
+- implement stochastic reconfig
