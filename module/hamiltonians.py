@@ -55,9 +55,6 @@ class Particles(Hamiltonian):
         Calculates H_loc on a batch of shape = (batch_dim, N * d_space)
         """
 
-        # T = -self.hbar**2*self.batch_mass_laplace(wavefunction, parameters, xs) / 2 / wavefunction.calc_psi(parameters, xs)
-        # V = self.potential(xs)
-
         return self.calc_T_loc(wavefunction, parameters, xs) + self.calc_V_loc(wavefunction, parameters, xs)
     
     def calc_T_loc(self, wavefunction, parameters, xs):
