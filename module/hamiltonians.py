@@ -3,6 +3,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import jax.random
+from jax import jvp, vjp, grad
 
 class Hamiltonian(ABC):
     """
@@ -44,8 +45,9 @@ class Particles(Hamiltonian):
 
         self.batch_mass_laplace = jax.vmap(self.mass_laplace, in_axes = [None, None, 0])
 
-    def calc_Hessian(self, wavefunction, parameters, x):
-        return jax.hessian(wavefunction.calc_psi_single, argnums = 1)(parameters, x)
+    def hvp(self, wavefunction, parameters, x, v):
+        f = lambda u: wavefunction.calc_psi_single(parameters, u)
+        return jvp(grad(f), x, v)[1]
     
     def mass_laplace(self, wavefunction, parameters, x):
         return jnp.sum(self.mass_mat * self.calc_Hessian(wavefunction, parameters, x))

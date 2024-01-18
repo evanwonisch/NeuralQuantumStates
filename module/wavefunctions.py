@@ -14,7 +14,6 @@ class Wavefunction(ABC):
         Initialises the class.
         """
         self.input_shape = input_shape
-        self.grad_logpsi = jax.vmap(jax.grad(self.calc_logpsi_single, argnums = 0), in_axes = (None, 0))
 
 
     @abstractmethod
