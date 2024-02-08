@@ -10,7 +10,7 @@ class Hamiltonian(ABC):
     """
 
     @abstractmethod
-    def calc_H_loc(self, wavefunction, xs):
+    def calc_H_loc(self, wavefunction, parameters, xs):
         """
         Evaluates the local Hamiltonian for a given wavefuntion on basis vectors xs.
         """
