@@ -3,6 +3,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import jax.random
+import math
 
 class Wavefunction(ABC):
     """
@@ -112,3 +113,84 @@ class LCAO(Wavefunction):
         d = jnp.sqrt(jnp.sum((x - R)**2, axis = -1))
 
         return jax.scipy.special.logsumexp(-parameters["k"] * d, b = parameters["lamb"], axis = -1)
+
+
+class HydrogenicOrbital(Wavefunction):
+    def __init__(self, n, l, m, Z = 1):
+        """
+        Creates a normalised hydrogenic orbital with quantum numbers n,l,m and nuclear charge Z in 3 dimensions.
+        """
+        super().__init__(input_shape = (3,))
+
+        assert n > 0, "n has to be positive"
+        assert l >= 0, "l has to be non negative"
+        assert l < n, "l has to be less than n"
+        assert jnp.abs(m) <= l, "abs(m) has to be less or equal to l"
+
+        self.n = n
+        self.l = l
+        self.m = m
+        self.Z = Z
+
+        self.assoc_laguerre = jax.vmap(self.ass_lag, in_axes=[None,None,0])
+
+    def spherical_harmonic(self, l, m, phi, theta):
+        """
+        Calculates the spherical harmonics Y_l^{m} at positions phi and theta.
+        """
+        theta = jnp.array(theta)
+
+        if not isinstance(phi, jax.numpy.ndarray):
+            phi = jnp.ones_like(theta) * phi
+        
+        l = jnp.ones_like(phi, dtype="int")*l
+        m = jnp.ones_like(phi, dtype="int")*m
+
+        y = jax.scipy.special.sph_harm(m, l, phi, theta)
+        return y
+
+
+    @partial(jax.jit, static_argnames=['self','n','k'])    
+    def ass_lag(self, n, k, x):
+        """
+        Calculazed the n,k-th associated Laguerre polynomial at position x.
+        """
+        if n < 0:
+            raise Exception("n has to be non-negative in asoociated Laguerre polynomials")
+
+        if n == 0:
+            return 1
+
+        carry = jnp.array([-x+k+1,1])
+
+        for i in range(1, n):
+            A = jnp.array([[(2*i+1+k-x)/(i+1), 1],[-(i+k)/(i+1),0]]).T
+            carry = A @ carry
+
+        return carry[0]
+
+    @partial(jax.jit, static_argnames=['self'])    
+    def radial_part(self, r):
+        """
+        Calculates the properly normalised radial part of the wavefunction.
+        """
+        a = (2*self.Z*r/self.n)**self.l * jnp.exp(-self.Z*r/self.n) * self.assoc_laguerre(self.n-self.l-1, 2*self.l+1, 2*self.Z*r/self.n) * math.factorial(self.n + self.l)
+        A = (2*self.Z/self.n)**3*math.factorial(self.n-self.l-1)/2/self.n/math.factorial(self.n+self.l)**3
+        return a * jnp.sqrt(A)
+
+    def evaluate(self, position):
+        x = position[:,0]
+        y = position[:,1]
+        z = position[:,2]
+        
+        r = jnp.sqrt(x ** 2 + y ** 2 + z ** 2)
+        theta = jnp.arccos(z / r)
+        phi = jnp.arctan2(y, x)
+
+        radial = self.radial_part(r)
+        angular = self.spherical_harmonic(self.l, self.m, phi, theta)
+
+        return radial * angular
+    
+    def calc_logpsi(self, parameters, position):
+        return jnp.log(self.evaluate(position))
