@@ -3,6 +3,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import jax.random
+from .misc.differentials import hess_diag
 
 class Hamiltonian(ABC):
     """
@@ -40,15 +41,13 @@ class Particles(Hamiltonian):
         self.d_space = d_space
         self.N = self.masses.shape[0]
 
-        self.mass_mat = jnp.diag(1/jnp.repeat(self.masses, self.d_space))
+        self.mass_array = 1/jnp.repeat(self.masses, self.d_space)
 
         self.batch_mass_laplace = jax.vmap(self.mass_laplace, in_axes = [None, None, 0])
 
-    def calc_Hessian(self, wavefunction, parameters, x):
-        return jax.hessian(wavefunction.calc_psi_single, argnums = 1)(parameters, x)
-    
     def mass_laplace(self, wavefunction, parameters, x):
-        return jnp.sum(self.mass_mat * self.calc_Hessian(wavefunction, parameters, x))
+        f = lambda x : wavefunction.calc_psi_single(parameters, x)
+        return jnp.sum(self.mass_array * hess_diag(f, x))
 
     def calc_H_loc(self, wavefunction, parameters, xs):
         """

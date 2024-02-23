@@ -4,17 +4,18 @@ from jax import jit
 import math
 from functools import partial
 
+
+@partial(jax.jit, static_argnames = ["l", "m"])
 def spherical_harmonic(l, m, phi, theta):
-    theta = jnp.array(theta)
+    """
+    Calculates the spehrical harmonics Y_l^m at positions phi and theta, which have to be 1D arrays of the same shape. 
+    """
+    l_ = jnp.ones_like(phi, dtype="int")*l
+    m_ = jnp.ones_like(phi, dtype="int")*m
 
-    if not isinstance(phi, jax.numpy.ndarray):
-        phi = jnp.ones_like(theta) * phi
-    
-    l = jnp.ones_like(phi, dtype="int")*l
-    m = jnp.ones_like(phi, dtype="int")*m
-
-    y = jax.scipy.special.sph_harm(m, l, phi, theta)
+    y = jax.scipy.special.sph_harm(m_, l_, phi, theta, n_max=l)
     return y
+
 
 @partial(jax.jit, static_argnames=['n','k'])    
 def ass_lag(n, k, x):
@@ -40,7 +41,7 @@ def radial_part(n, l, Z, r):
     A = (2*Z/n)**3*math.factorial(n-l-1)/2/n/math.factorial(n+l)**3
     return a * jnp.sqrt(A)
 
-
+@partial(jax.jit, static_argnames=['n','l','m','Z']) 
 def evaluate(n, l, m, Z, position):
     x = position[:,0]
     y = position[:,1]

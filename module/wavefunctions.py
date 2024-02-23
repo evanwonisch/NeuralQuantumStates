@@ -17,6 +17,12 @@ class Wavefunction(ABC):
         self.input_shape = input_shape
         self.grad_logpsi = jax.vmap(jax.grad(self.calc_logpsi_single, argnums = 0), in_axes = (None, 0))
 
+    def init_param(self, key):
+        """
+        Initialises the network parameters
+        """
+        return {}
+
 
     @abstractmethod
     def calc_logpsi(self, parameters, x):
@@ -134,19 +140,15 @@ class HydrogenicOrbital(Wavefunction):
 
         self.assoc_laguerre = jax.vmap(self.ass_lag, in_axes=[None,None,0])
 
+    @partial(jax.jit, static_argnames = ["self", "l", "m"])
     def spherical_harmonic(self, l, m, phi, theta):
         """
-        Calculates the spherical harmonics Y_l^{m} at positions phi and theta.
+        Calculates the spehrical harmonics Y_l^m at positions phi and theta, which have to be 1D arrays of the same shape. 
         """
-        theta = jnp.array(theta)
+        l_ = jnp.ones_like(phi, dtype="int")*l
+        m_ = jnp.ones_like(phi, dtype="int")*m
 
-        if not isinstance(phi, jax.numpy.ndarray):
-            phi = jnp.ones_like(theta) * phi
-        
-        l = jnp.ones_like(phi, dtype="int")*l
-        m = jnp.ones_like(phi, dtype="int")*m
-
-        y = jax.scipy.special.sph_harm(m, l, phi, theta)
+        y = jax.scipy.special.sph_harm(m_, l_, phi, theta, n_max=l)
         return y
 
 
