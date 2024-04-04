@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jnp
 import jax.random
 import math
+import module.misc.cutoffs as cutoffs
 
 class Wavefunction(ABC):
     """
@@ -100,10 +101,10 @@ class LCAO(Wavefunction):
         super().__init__(input_shape = (d_space,))
 
 
-    def init_parameters(self, R, k, lamb):
+    def init_param(self, R, k, lamb):
         """
         Creates the parameter pytree which incorporates shape R = (N_nuclei, d) positions of nuclei,
-        shape k = (N_nuclei) potential energy coefficients and shape l = (N_nuclei) linear combination coefficients.
+        shape k = (N_nuclei) potential energy coefficients (V = -k/r) and shape l = (N_nuclei) linear combination coefficients.
         """
         return {"R": R, "k": k, "lamb": lamb}
 
@@ -119,6 +120,47 @@ class LCAO(Wavefunction):
         d = jnp.sqrt(jnp.sum((x - R)**2, axis = -1))
 
         return jax.scipy.special.logsumexp(-parameters["k"] * d, b = parameters["lamb"], axis = -1)
+    
+
+class cutoffLCAO(Wavefunction):
+    def __init__(self, r_0 = 0.1, eps = 0.9, cutoff = cutoffs.h_C3, d_space = 3):
+        """
+        Creates an LCAO orbital in d dimensions, where the tails of all orbitals are truncated in the vincinity of any nucleus. r_0 is the cuttoff radius und eps the fade-out area.
+        """
+        super().__init__(input_shape = (d_space,))
+
+        self.r_0 = r_0
+        self.eps = eps
+        self.cutoff = cutoff
+
+
+    def init_parameters(self, R, k, lamb):
+        """
+        Creates the parameter pytree which incorporates shape R = (N_nuclei, d) positions of nuclei,
+        shape k = (N_nuclei) potential energy coefficients (V = -k/r) and shape l = (N_nuclei) linear combination coefficients.
+        """
+        return {"R": R, "k": k, "lamb": lamb}
+
+
+    def calc_logpsi(self, parameters, x):
+        """
+        Evaluates the logarithm of psi at positions shape x = (N_samples, d). The parameters incorporate the scaling
+        coefficients for the linear combination of orbitals, and thus have shape = (N_nuclei,).
+        """
+        x = jnp.expand_dims(x, axis = 1)
+        R = jnp.expand_dims(parameters["R"], axis = 0)
+
+        d = jnp.sqrt(jnp.sum((x - R)**2, axis = -1))
+
+        cut = jnp.expand_dims(self.cutoff((d - self.r_0 - self.eps)/self.eps), axis = -1)
+        
+        id = jnp.expand_dims(jnp.diag(jnp.ones(R.shape[1])), axis = 0)
+        
+        prefac = cut * (1 - id) + id
+        
+        fac = jnp.flip(jnp.prod(cut, axis = -1), axis = -1)
+
+        return jax.scipy.special.logsumexp(-parameters["k"] * d, b = parameters["lamb"] * fac, axis = -1)
 
 
 class HydrogenicOrbital(Wavefunction):
