@@ -19,4 +19,4 @@ def hessian(f, x):
 
 @partial(jax.jit, static_argnames=['f'])
 def hess_diag(f, x):
-    return _d2_(f, x, jax.nn.one_hot(jnp.arange(x.shape[0]), 3))
+    return _d2_(f, x, jax.nn.one_hot(jnp.arange(x.shape[0]), x.shape[0]))
