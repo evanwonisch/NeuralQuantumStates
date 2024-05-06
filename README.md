@@ -2,7 +2,7 @@
 Finding the ground state of a physical system is a frequent task of paramount importance in physics and also physical chemistry. The ground state of a given Hamiltonian corresponds to the state of lowest energy and is thus frequently used to deduce the low-energy properties of systems. In this project, we focus on determining the ground state of molecular systems in Euclidian space $\mathbb{E}_3$. Starting with most simple and trivial examples, our method is demonstrated to work. Passing on to more complicated problems, our method quickly runs into issues which will be discussed in detail.
 
 ## Theoretical Background
-Given a Hamiltonian $H$ which is a linear operator on a suitable function space over $\mathbb{R}^3$, one tries to solve the following eigenvalue equation, also known as the time-independent Schrödinger equation:
+Given a Hamiltonian $H$ which is a linear operator on a suitable function space over $\mathbb{R}^3$ (in the most simple one-electron case I describe here), one tries to solve the following eigenvalue equation, also known as the time-independent Schrödinger equation:
 
 $$
     H \Psi = E \Psi
