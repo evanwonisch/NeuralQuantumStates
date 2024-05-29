@@ -44,14 +44,27 @@ def apply_g(ansatz, samples, primals, tangent, eps = 1e-4):
     return jax.tree_util.tree_map(lambda a, b: a + eps * b, u, tangent)
 
 @partial(jax.jit, static_argnames=['ansatz'])
-def inverse_g(ansatz, samples, primals, cotangent, eps = 1e-4):
+def inverse_g_cg(ansatz, samples, primals, cotangent, eps = 1e-4):
     A = lambda tangents : apply_g(ansatz, samples, primals, tangents, eps)
     return jax.scipy.sparse.linalg.cg(A, cotangent)[0]
+
+#----------
+#  These methods only work if the parameters are all in a 1D array. They are used to calculate all components of the S-Matrix.
+#----------
+
+apply_g_broadcast = jax.vmap(apply_g, in_axes=[None, None, None, 0, None])
+
+@partial(jax.jit, static_argnames=['ansatz'])
+def get_g(ansatz, samples, param, eps = 1e-4):
+    id_param = jnp.identity(param.shape[0])
+    A = apply_g_broadcast(ansatz, samples, param, id_param, eps)
+    return A
+
+
 
 #-------------------------
 # in full summation
 #-------------------------
-
 
 def full_psi(ansatz, param, all_states):
     return ansatz.calc_psi(param, all_states)
@@ -86,6 +99,6 @@ def full_apply_g(ansatz, primals, tangent, all_states, eps = 1e-4):
     return jax.tree_util.tree_map(lambda a, b: a + eps * b, u, tangent)
 
 @partial(jax.jit, static_argnames=['ansatz'])
-def full_inverse_g(ansatz, primals, cotangent, all_states, eps = 1e-4):
+def full_inverse_g_cg(ansatz, primals, cotangent, all_states, eps = 1e-4):
     A = lambda tangents : full_apply_g(ansatz, primals, tangents, all_states, eps)
     return jax.scipy.sparse.linalg.cg(A, cotangent)[0]
