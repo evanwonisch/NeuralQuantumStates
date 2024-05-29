@@ -15,3 +15,5 @@ s_mul = lambda s,v: jax.tree_util.tree_map(lambda x: s*x, v)
 
 t_zeros_like = lambda v: jax.tree_util.tree_map(lambda a: a*0, v)
 t_ones_like = lambda v: jax.tree_util.tree_map(lambda a: a*0 + 1, v)
+
+t_dim = lambda tree: sum(x.size for x in jax.tree_util.tree_leaves(tree))

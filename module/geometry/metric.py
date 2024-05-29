@@ -17,10 +17,11 @@ from functools import partial
 
 def eval_S1(orbital, parameters, samples, v):
     f = lambda param: orbital.calc_logpsi(param, samples)
+    f_conj = lambda param: jnp.conjugate(orbital.calc_logpsi(param, samples))
     N = samples.shape[0]
 
     a = jax.jvp(f, (parameters,), (v,))[1]
-    b = netket.jax.vjp(f, parameters)[1](a)[0]
+    b = netket.jax.vjp(f_conj, parameters)[1](a)[0]
     return jax.tree_util.tree_map(lambda x: 1/N*x, b)
 
 def eval_S2(orbital, parameters, samples, v):
@@ -28,9 +29,9 @@ def eval_S2(orbital, parameters, samples, v):
     N = samples.shape[0]
     e = jnp.ones(N)
 
-    a = jnp.sum(jax.jvp(f, (parameters,), (v,))[1])
+    a = jnp.sum(jax.jvp(f, (parameters,), (v,))[1]).real
     b = netket.jax.vjp(f, parameters)[1](e)[0]
-    return  jax.tree_util.tree_map(lambda v: 1/N**2 * a * v, b)
+    return  jax.tree_util.tree_map(lambda v: 1/N**2 * a * v.real, b)
 
 def eval_S(orbital, parameters, samples, v):
     s1 = eval_S1(orbital, parameters, samples, v)
