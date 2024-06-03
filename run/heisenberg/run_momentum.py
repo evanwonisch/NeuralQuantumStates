@@ -242,7 +242,7 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
 
 print(sys.argv)
 index = int(sys.argv[1])
-hyper = jnp.load("hyperparameters.npy")
+hyper = jnp.load("hyperparameters_1.npy")
 final_lr = hyper[index, 0]
 final_diag = hyper[index, 1]
 final_beta = hyper[index, 2]
@@ -252,4 +252,4 @@ beta = optax.linear_schedule(0.3, final_beta, 70)
 diag = optax.linear_schedule(0.1, final_diag, 70)
 
 key, _ = jax.random.split(key)
-run(key, "data/momentum/hyper"+str(index), epoch = 5, N_samples = 1500, lr = lr, diag = diag, beta = beta)
+run(key, "data/momentum/hyper1/hyper"+str(index), epoch = 800, N_samples = 1500, lr = lr, diag = diag, beta = beta)
