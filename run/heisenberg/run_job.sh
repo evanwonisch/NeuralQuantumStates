@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=my_job
-#SBATCH --output=my_log.log
+#SBATCH --output=logs/log.log
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=24:00:00

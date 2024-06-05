@@ -262,4 +262,4 @@ rcond = optax.constant_schedule(final_rcond)
 beta = optax.constant_schedule(final_beta)
 
 key = jax.random.PRNGKey(r_seed)
-run(key, "data/momentum/hyper1/hyper_i="+str(index)+"_seed="+str(r_seed), epoch = 800, N_samples = 1500, lr = lr, rcond = rcond, beta = beta)
+run(key, "data/gridsearch/beta=0/hyper_i="+str(index)+"_seed="+str(r_seed), epoch = 1000, N_samples = 1500, lr = lr, rcond = rcond, beta = beta)
