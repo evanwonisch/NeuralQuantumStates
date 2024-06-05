@@ -10,6 +10,6 @@
 
 source ../../.venv/bin/activate
 
-echo -e "Starting job" $1
+echo -e "Starting job $1 using seed $2"
 
-python -m run_momentum $1
+python -m run_momentum $1 $2

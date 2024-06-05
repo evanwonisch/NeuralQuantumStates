@@ -1,5 +1,7 @@
-for k in {1..500}
+for k in {1..400}
 do
-    echo -e "\nStarting job $k"
-    sbatch run_job.sh $k
+    for seed in {1,10}
+    do
+        sbatch run_job.sh $k $seed
+    done
 done
