@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "../..")
+sys.path.insert(0, "../../..")
 
 import jax
 import jax.numpy as jnp
@@ -174,7 +174,7 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
         samples, ratio = sampler.sample(key, param, init_chain() , N*subsampling)
         return samples[0:-1:subsampling], ratio
     
-    stats = {"E":[], "dE":[], "ratio":[], "N_samples": [], "param": [], "rel_err":[], "gradient":[],"correction":[], "g":[]}
+    stats = {"energy":[], "variance":[], "accept":[], "N_samples": [], "rel_err":[]}
 
     ## initialise parameters
     samples = get_samples(N_samples)[0]
@@ -183,7 +183,7 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
     initial_gradient = jnp.linalg.pinv(g, hermitian=True, rcond=rcond(0)) @ grad
     old_param = param + lr(0)/(1 - beta(0)) * initial_gradient
 
-    for i in tqdm(range(epoch)):
+    for i in range(epoch):
         key, _ = jax.random.split(key)
 
         # samples
@@ -194,7 +194,7 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
 
 
         # geodesic correction
-        cor = christoffel.geodesic_correction(ansatz, samples, param, delta_param)
+        cor = christoffel.geodesic_correction(ansatz, samples, param, delta_param, eps = 0)
 
         # compute inversde metric
         g = metric.get_g(ansatz, samples, param, eps = 0)
@@ -221,28 +221,52 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
             raise Exception("The optimisation scheme has diverged.")
         
         # store statistics
-        stats["E"].append(E)
-        stats["dE"].append(dE)
-        stats["ratio"].append(ratio)
+        stats["energy"].append(E)
+        stats["variance"].append(dE)
+        stats["accept"].append(ratio)
         stats["N_samples"].append(N_samples)
         stats["rel_err"].append(jnp.abs(E - E_f)/-E_f)
-        stats["param"].append(jnp.copy(param))
-        stats["gradient"].append(grad)
-        stats["correction"].append(cor)
-        stats["g"].append(g)
 
+    ##########################################
+    ##### calculate good final energy estimate
+    ##########################################
 
+    hamiltonian_jax = hamiltonian.to_pauli_strings().to_jax_operator()
+    def calc_H_loc(orbital, parameters, samples):
+        eta, H_sigmaeta = hamiltonian_jax.get_conn_padded(samples)
+        
+        logpsi_sigma = orbital.calc_logpsi(parameters, samples)
+        logpsi_eta = orbital.calc_logpsi(parameters, eta)
+        logpsi_sigma = jnp.expand_dims(logpsi_sigma, -1) 
+        
+        res = jnp.sum(H_sigmaeta * jnp.exp(logpsi_eta - logpsi_sigma), axis=-1)
+        
+        return res
+    N_samples = 30000
+    key, _ = jax.random.split(key)
+    samples, ratio = get_samples(N_samples)
+    H_loc = calc_H_loc(ansatz, param, samples).real
 
-    #
-    # save statistics
-    #
+    E_estimate = jnp.mean(H_loc)
+    u_E_estimate = jnp.std(H_loc)/jnp.sqrt(N_samples)
+    rel_err_estimate = (jnp.mean(H_loc) - E_f)/jnp.abs(E_f)
+    final_summary = jnp.array([E_estimate, u_E_estimate, rel_err_estimate])
+    final_param = param
+
+    ##########################################
+    # save the data
+    ##########################################
     numpy_stats = {}
     for key_ in stats.keys():
         numpy_stats[key_] = np.array(stats[key_])
 
-    with open(fname, 'wb') as f:
-        pickle.dump(numpy_stats, f)
+    for stat in numpy_stats:
+        print("saved to ", fname)
+        np.save(fname+"_"+stat, numpy_stats[stat])
 
+    
+    np.save(fname+"_"+"param", final_param)
+    np.save(fname+"_"+"summary", final_summary)
 
 
 #
@@ -251,15 +275,14 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
 
 index = int(sys.argv[1])
 r_seed = int(sys.argv[2])
-hyper = jnp.load("hyper_cube.npy")
+hyper = jnp.load("/mnt/beegfs/workdir/evan.wonisch/NeuralQuantumStates/run/heisenberg/hyper_cube_fine.npy")
 
 final_lr = hyper[index, 0]
 final_rcond = hyper[index, 1]
-final_beta = hyper[index, 2]
 
 lr = optax.constant_schedule(final_lr)
 rcond = optax.constant_schedule(final_rcond)
-beta = optax.constant_schedule(final_beta)
+beta = optax.constant_schedule(0.9)
 
 key = jax.random.PRNGKey(r_seed)
-run(key, "data/gridsearch/beta=0/hyper_i="+str(index)+"_seed="+str(r_seed), epoch = 1000, N_samples = 1500, lr = lr, rcond = rcond, beta = beta)
+run(key, "/mnt/beegfs/workdir/evan.wonisch/NeuralQuantumStates/data/gridsearch_fine/beta=0.9/hyper_i="+str(index)+"_seed="+str(r_seed), epoch = 1500, N_samples = 1500, lr = lr, rcond = rcond, beta = beta)

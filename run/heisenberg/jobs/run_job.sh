@@ -8,7 +8,7 @@
 #SBATCH --partition=cpu_dist
 #SBATCH --account=ndqm
 
-source ../../.venv/bin/activate
+source ../../../.venv/bin/activate
 
 echo -e "Starting job" $1 "using seed" $2
 

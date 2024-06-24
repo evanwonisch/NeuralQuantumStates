@@ -1,8 +1,8 @@
 # !/bin/bash
 
-for k in $(seq 1 400)
+for k in $(seq 0 224)
 do
-    for seed in $(seq 1 10) 
+    for seed in $(seq 0 9) 
     do
         sbatch run_job.sh $k $seed
     done
