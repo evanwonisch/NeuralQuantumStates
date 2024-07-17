@@ -275,14 +275,14 @@ def run(key, fname, epoch = 100, N_samples = 1500, lr = optax.constant_schedule(
 
 index = int(sys.argv[1])
 r_seed = int(sys.argv[2])
-hyper = jnp.load("/mnt/beegfs/workdir/evan.wonisch/NeuralQuantumStates/run/heisenberg/hyper_cube_fine.npy")
+hyper = jnp.load("/mnt/beegfs/workdir/evan.wonisch/NeuralQuantumStates/run/heisenberg/hyper_cube_fine_small.npy")
 
 final_lr = hyper[index, 0]
 final_rcond = hyper[index, 1]
 
 lr = optax.constant_schedule(final_lr)
 rcond = optax.constant_schedule(final_rcond)
-beta = optax.constant_schedule(0.9)
+beta = optax.constant_schedule(0.3)
 
 key = jax.random.PRNGKey(r_seed)
-run(key, "/mnt/beegfs/workdir/evan.wonisch/NeuralQuantumStates/data/gridsearch_fine/beta=0.9/hyper_i="+str(index)+"_seed="+str(r_seed), epoch = 1500, N_samples = 1500, lr = lr, rcond = rcond, beta = beta)
+run(key, "/mnt/beegfs/workdir/evan.wonisch/NeuralQuantumStates/data/gridsearch_small/beta=0.3/hyper_i="+str(index)+"_seed="+str(r_seed), epoch = 1500, N_samples = 1500, lr = lr, rcond = rcond, beta = beta)
